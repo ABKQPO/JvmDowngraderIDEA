@@ -12,8 +12,6 @@ import com.intellij.openapi.roots.impl.JavaLanguageLevelPusher
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.pom.java.LanguageLevel
 import com.intellij.psi.FilePropertyKey
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.psi.PsiManager
 
 class LibraryJavaLanguageLevelPusher : FilePropertyPusherBase<LanguageLevel>() {
     private val languageLevelKey = JavaLanguageLevelPusher().filePropertyKey
@@ -34,8 +32,8 @@ class LibraryJavaLanguageLevelPusher : FilePropertyPusherBase<LanguageLevel>() {
     override fun acceptsDirectory(file: VirtualFile, project: Project): Boolean = false
 
     override fun propertyChanged(project: Project, file: VirtualFile, value: LanguageLevel) {
-        PsiManager.getInstance(project).dropPsiCaches()
-        DaemonCodeAnalyzer.getInstance(project).restart(this)
+        // PushedFilePropertiesUpdater can invoke this from a write-unsafe context.
+        // The refresh coordinator invalidates PSI after all properties are updated.
     }
 
     fun resolve(project: Project, file: VirtualFile): LanguageLevel? {
