@@ -1,6 +1,6 @@
 package com.hfstudio.jvmdowngraderidea.settings
 
-import com.hfstudio.jvmdowngraderidea.refresh.ModernJavaRefreshCoordinator
+import com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.ProjectManager
@@ -18,7 +18,7 @@ class JvmDowngraderConfigurable : Configurable {
     override fun createComponent(): JComponent {
         modeBox.renderer = SimpleListCellRenderer.create("") { it?.presentableName }
         return FormBuilder.createFormBuilder()
-            .addLabeledComponent("Default source language level", modeBox)
+            .addLabeledComponent("Default library source language level", modeBox)
             .panel
     }
 
@@ -27,7 +27,7 @@ class JvmDowngraderConfigurable : Configurable {
     override fun apply() {
         settings.mode = modeBox.item ?: LanguageLevelMode.AUTO
         ProjectManager.getInstance().openProjects.forEach { project ->
-            project.service<ModernJavaRefreshCoordinator>().refresh()
+            project.service<LibrarySourceRefreshCoordinator>().refresh()
         }
     }
 

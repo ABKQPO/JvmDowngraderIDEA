@@ -1,11 +1,11 @@
-package com.hfstudio.jvmdowngraderidea.refresh
+package com.hfstudio.jvmdowngraderidea.library
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 
-class ModernJavaStartupActivity : ProjectActivity {
+class LibrarySourceStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
-        project.service<ModernJavaRefreshCoordinator>().start()
+        project.service<LibrarySourceRefreshCoordinator>().start()
     }
 }

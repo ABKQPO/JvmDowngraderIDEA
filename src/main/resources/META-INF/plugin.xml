@@ -3,8 +3,8 @@
     <name>JVM Downgrader</name>
     <vendor url="https://github.com/HFStudio">HFStudio</vendor>
     <description><![CDATA[
-        Keeps the IntelliJ Java language level aligned with GTNH Gradle projects that use JVM Downgrader or Jabel.<br>
-        Gradle remains the build authority; existing libraries, source attachments, navigation, and multi-release JAR handling remain native to IntelliJ IDEA.
+        Parses JVM Downgrader and Jabel dependency source attachments at their required Java language level.<br>
+        It does not change the language level configured in Project Structure for project files.
     ]]></description>
 
     <idea-version since-build="261.24374" until-build="261.*"/>
@@ -15,7 +15,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderApplicationSettings"/>
         <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectSettings"/>
-        <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.refresh.ModernJavaRefreshCoordinator"/>
+        <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator"/>
         <applicationConfigurable
                 id="com.hfstudio.jvmdowngraderidea.settings"
                 displayName="JVM Downgrader"
@@ -26,6 +26,7 @@
                 displayName="JVM Downgrader"
                 parentId="tools"
                 instance="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectConfigurable"/>
-        <backgroundPostStartupActivity implementation="com.hfstudio.jvmdowngraderidea.refresh.ModernJavaStartupActivity"/>
+        <filePropertyPusher implementation="com.hfstudio.jvmdowngraderidea.library.LibraryJavaLanguageLevelPusher"/>
+        <backgroundPostStartupActivity implementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceStartupActivity"/>
     </extensions>
 </idea-plugin>

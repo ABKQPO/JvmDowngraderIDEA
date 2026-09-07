@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel
+
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.changelog")
@@ -23,5 +25,11 @@ intellijPlatform {
         ides {
             current()
         }
+        // This is IntelliJ 261's dedicated file-level Java language provider.
+        // The extension point is Internal, so the verifier reports it but may not fail the build for it.
+        failureLevel = listOf(
+            FailureLevel.COMPATIBILITY_PROBLEMS,
+            FailureLevel.OVERRIDE_ONLY_API_USAGES,
+        )
     }
 }

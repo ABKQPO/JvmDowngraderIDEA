@@ -1,41 +1,34 @@
 # JVM Downgrader
 
-IntelliJ IDEA plugin for Gradle projects that compile modern Java syntax through JVM Downgrader or Jabel while producing Java 8-compatible bytecode.
+IntelliJ IDEA plugin that parses JVM Downgrader and Jabel dependency source attachments with the Java language level they require.
 
 Target platform: IntelliJ IDEA 2026.1.2, build `261.24374.151`.
 
 ## What it changes
 
-The plugin only updates the IntelliJ module source language level after a Gradle import, after changes to the relevant Gradle properties, or after applying its settings. It does not change Gradle compiler configuration, delegation, library roots, source roots, JAR files, PSI, navigation handlers, or dependency order entries.
+The plugin only provides a file-level language level for Java files in dependency source attachments. Project files always keep the language level configured in **Project Structure**. It does not change Gradle compiler configuration, delegation, module language levels, SDKs, library roots, source roots, JAR files, PSI ownership, navigation handlers, or dependency order entries.
 
-As a result, Java library navigation, attached sources, code completion, Find Usages, and normal multi-release JAR resolution remain provided by IntelliJ IDEA. Use Gradle to build the project; IntelliJ's language-level presentation is not a build replacement.
+Java library navigation, attached sources, code completion, Find Usages, and normal multi-release JAR resolution remain provided by IntelliJ IDEA. Use Gradle to build the project; this plugin is not a build replacement.
 
 ## Detection
 
-The plugin reads these files from each imported Gradle root:
+The plugin obtains the library owning the opened source attachment through IntelliJ's `LibraryOrderEntry`; it never reads the library's or consuming project's Gradle configuration.
 
-- `gradle.properties`
-- `gradle/gradle-daemon-jvm.properties`
+- A JVM Downgrader artifact is recognized only when its class data contains the generic `xyz/wagyourtail/jvmdg/` marker. Its level is the largest valid `META-INF/versions/<N>` layer in that class JAR.
+- Jabel outputs compatibility bytecode and does not retain a source-language marker. For such source attachments, the plugin determines the minimum language level from actual Java syntax, including `var`, pattern `instanceof`, enhanced `switch`, pattern `switch`, records, sealed types, and text blocks.
+- In automatic mode, ordinary Java 8 dependencies return no override and IntelliJ IDEA keeps its native behavior.
 
-Rules:
-
-- `enableModernJavaSyntax=jvmDowngrader`: uses the highest number in `jvmDowngraderMultiReleaseVersions`; when absent, uses `forceToolchainVersion`, then `toolchainVersion` from the daemon properties.
-- `enableModernJavaSyntax=jabel`: uses `forceToolchainVersion`, then daemon `toolchainVersion`. `downgradeTargetVersion` is intentionally ignored because it is a bytecode target, not the Java source syntax level.
-- Other modes are untouched in automatic mode.
-
-The embedded JAR scanner recognizes JVM Downgrader artifacts only when their class data contains the `xyz/wagyourtail/jvmdg/` marker. It records multi-release layers without reclassifying ordinary multi-release JARs, so normal IntelliJ handling remains authoritative for all dependencies.
-
-For example, an artifact with Java 8 base classes and `META-INF/versions/17`, `21`, and `25` layers is recognized as JVM Downgrader metadata, while a project configured with `jvmDowngraderMultiReleaseVersions=17,21,25` receives Java 25 as its source language level rather than Java 8.
+No dependency coordinate, artifact name, package name, or hardcoded project is used for detection.
 
 ## Settings
 
 Settings are under **Settings | Tools | JVM Downgrader**.
 
-- Global default: `Automatic` or a fixed Java 8/11/17/21/25 level.
-- Project default: `Inherit global setting`, `Automatic`, or a fixed level.
+- Global default: `Automatic` or a fixed Java 8/11/17/21/25 library source level.
+- Project default: `Inherit global setting`, `Automatic`, or a fixed library source level.
 - Project `Inherit global setting` uses the global selection. Any other project value overrides it.
 
-When the selected level has no configured Java SDK at least that new, the module is left unchanged and a diagnostic is written to the IDE log. Add a suitable SDK in IntelliJ IDEA, then refresh the project.
+Fixed settings are used only while parsing dependency source attachments. They never update a module's language level.
 
 ## Build
 

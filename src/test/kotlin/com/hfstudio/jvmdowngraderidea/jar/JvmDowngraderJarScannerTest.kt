@@ -5,6 +5,7 @@ import java.nio.file.Path
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class JvmDowngraderJarScannerTest {
@@ -32,6 +33,26 @@ class JvmDowngraderJarScannerTest {
         assertEquals(
             JvmDowngraderJarInfo(false, setOf(21)),
             JvmDowngraderJarScanner.scan(fixtureJar("META-INF/versions/21/example/Api.class" to byteArrayOf()))
+        )
+    }
+
+    @Test
+    fun `jvm downgrader archive exposes its highest multi release level`() {
+        val jar = fixtureJar(
+            "META-INF/versions/17/example/Api.class" to byteArrayOf(),
+            "META-INF/versions/25/example/Api.class" to byteArrayOf(),
+            "example/Marker.class" to "xyz/wagyourtail/jvmdg/j16/stub".encodeToByteArray(),
+        )
+
+        assertEquals(25, JvmDowngraderJarScanner.scan(jar).automaticLanguageLevel)
+    }
+
+    @Test
+    fun `ordinary multi release archive has no automatic override`() {
+        assertNull(
+            JvmDowngraderJarScanner.scan(
+                fixtureJar("META-INF/versions/25/example/Api.class" to byteArrayOf()),
+            ).automaticLanguageLevel,
         )
     }
 
