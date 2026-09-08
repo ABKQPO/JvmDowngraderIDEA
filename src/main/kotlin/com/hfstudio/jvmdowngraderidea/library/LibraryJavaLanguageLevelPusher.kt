@@ -1,9 +1,6 @@
 package com.hfstudio.jvmdowngraderidea.library
 
-import com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderApplicationSettings
-import com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectSettings
 import com.intellij.FilePropertyPusherBase
-import com.intellij.openapi.components.service
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.LibraryOrderEntry
@@ -25,9 +22,9 @@ class LibraryJavaLanguageLevelPusher : FilePropertyPusherBase<LanguageLevel>() {
     override fun getImmediateValue(module: Module): LanguageLevel = LanguageLevel.HIGHEST
 
     override fun getImmediateValue(project: Project, file: VirtualFile?): LanguageLevel? =
-        file?.let { resolve(project, it) }
+        file?.let { lookup(it).level?.let(LanguageLevel::forFeature) }
 
-    override fun acceptsFile(file: VirtualFile, project: Project): Boolean = resolve(project, file) != null
+    override fun acceptsFile(file: VirtualFile, project: Project): Boolean = lookup(file).level != null
 
     override fun acceptsDirectory(file: VirtualFile, project: Project): Boolean = false
 
@@ -36,22 +33,20 @@ class LibraryJavaLanguageLevelPusher : FilePropertyPusherBase<LanguageLevel>() {
         // The refresh coordinator invalidates PSI after all properties are updated.
     }
 
-    fun resolve(project: Project, file: VirtualFile): LanguageLevel? {
-        if (file.extension != "java") return null
+    fun lookup(file: VirtualFile): LibrarySourceLanguageLevelLookup {
+        if (file.extension != "java") return LibrarySourceLanguageLevelLookup.resolved(null)
+        return LibrarySourceLanguageLevelResolver.cachedLevel(file)
+    }
+
+    fun requestResolution(project: Project, file: VirtualFile, onResolved: () -> Unit) {
+        if (file.extension != "java") return
 
         val fileIndex = ProjectFileIndex.getInstance(project)
-        if (!fileIndex.isInLibrarySource(file)) return null
+        if (!fileIndex.isInLibrarySource(file)) return
 
-        val fixedLevel = LibrarySourceLanguageLevelSettingsResolver.fixedLevel(
-            project.service<JvmDowngraderProjectSettings>().mode,
-            service<JvmDowngraderApplicationSettings>().mode,
-        )
-        return fileIndex.getOrderEntriesForFile(file)
-            .asSequence()
+        val libraries = fileIndex.getOrderEntriesForFile(file)
             .filterIsInstance<LibraryOrderEntry>()
             .mapNotNull(LibraryOrderEntry::getLibrary)
-            .mapNotNull { library -> LibrarySourceLanguageLevelResolver.resolve(file, library, fixedLevel) }
-            .maxOrNull()
-            ?.let(LanguageLevel::forFeature)
+        LibrarySourceLanguageLevelResolver.requestLevel(file, libraries, onResolved)
     }
 }

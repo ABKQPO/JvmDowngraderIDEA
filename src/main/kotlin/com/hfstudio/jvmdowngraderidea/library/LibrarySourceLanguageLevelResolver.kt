@@ -6,27 +6,43 @@ import com.hfstudio.jvmdowngraderidea.source.JavaSourceLanguageFeatureDetector
 import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.roots.libraries.Library
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.openapi.vfs.VirtualFile
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 object LibrarySourceLanguageLevelResolver {
-    private val jarInfoCache = ConcurrentHashMap<Path, JvmDowngraderJarInfo>()
+    private val jarInfoCache = ConcurrentHashMap<Path, CompletableFuture<JvmDowngraderJarInfo>>()
+    private val sourceLevelCache = LibrarySourceLanguageLevelCache()
 
-    fun resolve(sourceFile: VirtualFile, library: Library, fixedLevel: Int?): Int? {
-        if (fixedLevel != null) return fixedLevel
+    fun cachedLevel(sourceFile: VirtualFile): LibrarySourceLanguageLevelLookup = sourceLevelCache.lookup(sourceFile.url)
 
-        val jvmDowngraderLevel = library.getFiles(OrderRootType.CLASSES)
-            .asSequence()
-            .mapNotNull(::jarInfo)
-            .mapNotNull(JvmDowngraderJarInfo::automaticLanguageLevel)
-            .maxOrNull()
-        if (jvmDowngraderLevel != null) return jvmDowngraderLevel
+    fun requestLevel(
+        sourceFile: VirtualFile,
+        libraries: Collection<Library>,
+        onResolved: () -> Unit,
+    ) {
+        val sourceResult = sourceLevelCache.acquire(sourceFile.url)
+        sourceResult.future.whenComplete { _, _ -> onResolved() }
+        if (!sourceResult.isNew) return
 
-        val sourceSyntaxLevel = runCatching {
-            JavaSourceLanguageFeatureDetector.detect(VfsUtilCore.loadText(sourceFile))
-        }.getOrNull()
-        return selectLevel(null, null, sourceSyntaxLevel)
+        val jarFutures = libraries.asSequence()
+            .flatMap { it.getFiles(OrderRootType.CLASSES).asSequence() }
+            .mapNotNull(::jarPath)
+            .map(::requestJarInfo)
+            .toList()
+        CompletableFuture.allOf(*jarFutures.toTypedArray()).whenComplete { _, _ ->
+            val jvmDowngraderLevel = jarFutures.asSequence()
+                .mapNotNull { runCatching { it.getNow(null) }.getOrNull() }
+                .mapNotNull(JvmDowngraderJarInfo::automaticLanguageLevel)
+                .maxOrNull()
+            if (jvmDowngraderLevel != null) {
+                sourceResult.future.complete(jvmDowngraderLevel)
+            } else {
+                requestSourceLevel(sourceFile, sourceResult.future)
+            }
+        }
     }
 
     fun selectLevel(
@@ -35,9 +51,26 @@ object LibrarySourceLanguageLevelResolver {
         sourceSyntaxLevel: Int?,
     ): Int? = fixedLevel ?: jvmDowngraderLevel ?: sourceSyntaxLevel
 
-    private fun jarInfo(classRoot: VirtualFile): JvmDowngraderJarInfo? {
+    private fun requestJarInfo(path: Path): CompletableFuture<JvmDowngraderJarInfo> =
+        jarInfoCache.computeIfAbsent(path) {
+            CompletableFuture<JvmDowngraderJarInfo>().also { result ->
+                AppExecutorUtil.getAppExecutorService().execute {
+                    result.complete(JvmDowngraderJarScanner.scan(path))
+                }
+            }
+        }
+
+    private fun requestSourceLevel(sourceFile: VirtualFile, result: CompletableFuture<Int?>) {
+        AppExecutorUtil.getAppExecutorService().execute {
+            result.complete(
+                runCatching { JavaSourceLanguageFeatureDetector.detect(VfsUtilCore.loadText(sourceFile)) }
+                    .getOrNull(),
+            )
+        }
+    }
+
+    private fun jarPath(classRoot: VirtualFile): Path? {
         val jarFile = VfsUtilCore.getVirtualFileForJar(classRoot) ?: return null
-        val path = runCatching { Path.of(jarFile.path).toAbsolutePath().normalize() }.getOrNull() ?: return null
-        return jarInfoCache.computeIfAbsent(path, JvmDowngraderJarScanner::scan)
+        return runCatching { Path.of(jarFile.path).toAbsolutePath().normalize() }.getOrNull()
     }
 }

@@ -5,6 +5,7 @@ import java.nio.file.Path
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -34,6 +35,18 @@ class JvmDowngraderJarScannerTest {
             JvmDowngraderJarInfo(false, setOf(21)),
             JvmDowngraderJarScanner.scan(fixtureJar("META-INF/versions/21/example/Api.class" to byteArrayOf()))
         )
+    }
+
+    @Test
+    fun `marker in a resource file does not classify an archive as JVM Downgrader`() {
+        val info = JvmDowngraderJarScanner.scan(
+            fixtureJar(
+                "META-INF/versions/21/example/Api.class" to byteArrayOf(),
+                "META-INF/notice.txt" to "xyz/wagyourtail/jvmdg/".encodeToByteArray(),
+            ),
+        )
+
+        assertFalse(info.isJvmDowngrader)
     }
 
     @Test
