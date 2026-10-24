@@ -35,9 +35,6 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         scheduleUpdate(file)
     }
 
-    fun fileOverride(file: VirtualFile): LanguageLevelMode =
-        fileOverrides[file.url] ?: LanguageLevelMode.AUTO
-
     fun statusText(file: VirtualFile): String {
         val override = fileOverrides[file.url]
         if (override != null && override != LanguageLevelMode.AUTO) return override.presentableName
@@ -48,7 +45,7 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
 
     fun start() {
         project.messageBus.connect(project).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
-            override fun fileOpened(source: FileEditorManager, file: com.intellij.openapi.vfs.VirtualFile) {
+            override fun fileOpened(source: FileEditorManager, file: VirtualFile) {
                 scheduleUpdate(file)
             }
         })
@@ -65,7 +62,7 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         )
     }
 
-    private fun scheduleUpdate(file: com.intellij.openapi.vfs.VirtualFile) {
+    private fun scheduleUpdate(file: VirtualFile) {
         ApplicationManager.getApplication().invokeLater(
             {
                 if (!project.isDisposed) {
@@ -78,7 +75,7 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         )
     }
 
-    private fun updateOrRequest(file: com.intellij.openapi.vfs.VirtualFile) {
+    private fun updateOrRequest(file: VirtualFile) {
         if (!LibrarySourceRefreshScope.shouldUpdate(
                 file.extension,
                 ProjectFileIndex.getInstance(project).isInLibrarySource(file),
@@ -116,7 +113,7 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         updateLanguageLevel(file, lookup.level?.let(com.intellij.pom.java.LanguageLevel::forFeature))
     }
 
-    private fun updateLanguageLevel(file: com.intellij.openapi.vfs.VirtualFile, level: com.intellij.pom.java.LanguageLevel?) {
+    private fun updateLanguageLevel(file: VirtualFile, level: com.intellij.pom.java.LanguageLevel?) {
         if (pusher.filePropertyKey.getPersistentValue(file) == level) return
 
         if (level == null) {
@@ -132,7 +129,7 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         // immediately, without requiring a sandbox restart.
         FileContentUtilCore.reparseFiles(file)
         PsiManager.getInstance(project).findFile(file)?.let {
-            DaemonCodeAnalyzer.getInstance(project).restart(it)
+            DaemonCodeAnalyzer.getInstance(project).restart(it, "JvmDowngrader language level changed")
         }
     }
 }

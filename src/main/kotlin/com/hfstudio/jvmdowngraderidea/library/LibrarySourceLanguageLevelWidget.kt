@@ -65,6 +65,7 @@ private class LibrarySourceLanguageLevelWidget(
 
     override fun getAlignment(): Float = 0.5f
 
+    @Suppress("RedundantNullableReturnType")
     override fun getClickConsumer(): Consumer<MouseEvent>? {
         return Consumer { event ->
             currentDependencySource()?.let { showChoices(it, event) }
@@ -77,7 +78,7 @@ private class LibrarySourceLanguageLevelWidget(
 
     private fun currentFile() = fileEditorManager.currentFile
 
-    private fun currentDependencySource() = ReadAction.compute<com.intellij.openapi.vfs.VirtualFile?, RuntimeException> {
+    private fun currentDependencySource() = ReadAction.computeBlocking<com.intellij.openapi.vfs.VirtualFile?, RuntimeException> {
         currentFile()?.takeIf {
             it.extension == "java" && ProjectFileIndex.getInstance(project).isInLibrarySource(it)
         }
