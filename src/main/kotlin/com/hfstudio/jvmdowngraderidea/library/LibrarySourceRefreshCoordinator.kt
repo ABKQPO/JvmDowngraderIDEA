@@ -106,18 +106,10 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
 
     private fun effectiveMode(file: VirtualFile): LanguageLevelMode {
         fileOverrides[file.url]?.let { return it }
-        val fixedLevel = LibrarySourceLanguageLevelSettingsResolver.fixedLevel(
+        val mode = LibrarySourceLanguageLevelSettingsResolver.defaultMode(
             project.service<JvmDowngraderProjectSettings>().mode,
             service<JvmDowngraderApplicationSettings>().mode,
         )
-        val mode = when (fixedLevel) {
-            8 -> LanguageLevelMode.JAVA_8
-            11 -> LanguageLevelMode.JAVA_11
-            17 -> LanguageLevelMode.JAVA_17
-            21 -> LanguageLevelMode.JAVA_21
-            25 -> LanguageLevelMode.JAVA_25
-            else -> LanguageLevelMode.AUTO
-        }
         fileOverrides[file.url] = mode
         LibrarySourceLanguageLevelOverrides.set(project, file, mode.javaVersion)
         return mode
