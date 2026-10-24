@@ -26,9 +26,14 @@ Settings are under **Settings | Tools | JVM Downgrader**.
 
 - Global default: `Automatic` or a fixed Java 8/11/17/21/25 library source level.
 - Project default: `Inherit global setting`, `Automatic`, or a fixed library source level.
-- Project `Inherit global setting` uses the global selection. Any other project value overrides it.
 
-Fixed settings are used only while parsing dependency source attachments. They never update a module's language level.
+> Project `Inherit global setting` uses the global selection. Any other project value overrides it.
+
+> You can change the target language level for the currently opened dependency source at any time from the status bar.
+>
+> ![Dependency source language level status bar](doc-images/status-bar-button.png)
+
+These settings and per-file selections only affect dependency source parsing. They never update a module's language level.
 
 ## Build
 
