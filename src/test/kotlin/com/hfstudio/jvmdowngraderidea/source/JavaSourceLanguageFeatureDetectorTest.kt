@@ -14,6 +14,24 @@ class JavaSourceLanguageFeatureDetectorTest {
     }
 
     @Test
+    fun `detects var lambda parameter as Java 11`() {
+        assertEquals(
+            11,
+            JavaSourceLanguageFeatureDetector.detect(
+                "class Demo { java.util.function.Function<String, Integer> run() { return (var value) -> value.length(); } }",
+            ),
+        )
+    }
+
+    @Test
+    fun `detects record declaration as Java 16`() {
+        assertEquals(
+            16,
+            JavaSourceLanguageFeatureDetector.detect("record Demo(String value) { }"),
+        )
+    }
+
+    @Test
     fun `detects pattern instance of as Java 16`() {
         assertEquals(
             16,
@@ -34,11 +52,43 @@ class JavaSourceLanguageFeatureDetectorTest {
     }
 
     @Test
+    fun `detects text block as Java 15`() {
+        assertEquals(
+            15,
+            JavaSourceLanguageFeatureDetector.detect(
+                "class Demo { String text = \"\"\"line 1\\nline 2\"\"\"; }",
+            ),
+        )
+    }
+
+    @Test
     fun `detects pattern switch as Java 21`() {
         assertEquals(
             21,
             JavaSourceLanguageFeatureDetector.detect(
                 "class Demo { int run(Object value) { return switch (value) { case String text -> text.length(); default -> 0; }; } }",
+            ),
+        )
+    }
+
+    @Test
+    fun `detects sealed declaration as Java 17`() {
+        assertEquals(
+            17,
+            JavaSourceLanguageFeatureDetector.detect("sealed interface Demo permits Child { }"),
+        )
+    }
+
+    @Test
+    fun `detects string template as Java 22`() {
+        assertEquals(
+            22,
+            JavaSourceLanguageFeatureDetector.detect(
+                """
+                class Demo {
+                    String text = STR."hello \{name}";
+                }
+                """.trimIndent(),
             ),
         )
     }
