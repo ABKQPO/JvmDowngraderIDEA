@@ -19,7 +19,7 @@
         <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator"/>
         <projectConfigurable
                 id="com.hfstudio.jvmdowngraderidea.projectSettings"
-                displayName="%settings.title"
+                key="settings.title"
                 parentId="tools"
                 instance="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectConfigurable"/>
         <filePropertyPusher implementation="com.hfstudio.jvmdowngraderidea.library.LibraryJavaLanguageLevelPusher"/>
