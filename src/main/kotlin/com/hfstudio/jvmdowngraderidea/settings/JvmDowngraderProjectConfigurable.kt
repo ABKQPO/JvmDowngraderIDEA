@@ -1,5 +1,6 @@
 package com.hfstudio.jvmdowngraderidea.settings
 
+import com.hfstudio.jvmdowngraderidea.JvmDowngraderBundle
 import com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
@@ -15,15 +16,15 @@ class JvmDowngraderProjectConfigurable(private val project: Project) : Configura
     private val globalModeBox = ComboBox(LanguageLevelMode.entries.filter { it != LanguageLevelMode.INHERIT_GLOBAL }.toTypedArray())
     private val projectModeBox = ComboBox(LanguageLevelMode.entries.toTypedArray())
 
-    override fun getDisplayName(): String = "JVM Downgrader"
+    override fun getDisplayName(): String = JvmDowngraderBundle.message("settings.title")
 
     override fun createComponent(): JComponent {
         val renderer = SimpleListCellRenderer.create<LanguageLevelMode>("") { it?.presentableName }
         globalModeBox.renderer = renderer
         projectModeBox.renderer = renderer
         return FormBuilder.createFormBuilder()
-            .addLabeledComponent("Global default library source language level", globalModeBox)
-            .addLabeledComponent("Project default library source language level", projectModeBox)
+            .addLabeledComponent(JvmDowngraderBundle.message("settings.global-default"), globalModeBox)
+            .addLabeledComponent(JvmDowngraderBundle.message("settings.project-default"), projectModeBox)
             .panel
     }
 

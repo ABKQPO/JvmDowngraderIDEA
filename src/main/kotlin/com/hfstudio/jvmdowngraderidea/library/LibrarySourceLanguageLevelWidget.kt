@@ -1,5 +1,6 @@
 package com.hfstudio.jvmdowngraderidea.library
 
+import com.hfstudio.jvmdowngraderidea.JvmDowngraderBundle
 import com.hfstudio.jvmdowngraderidea.settings.LanguageLevelMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ReadAction
@@ -13,13 +14,16 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.util.Consumer
+import java.awt.Dimension
+import java.awt.Point
 import java.awt.event.MouseEvent
 
 class LibrarySourceLanguageLevelWidgetFactory : StatusBarWidgetFactory {
     override fun getId(): String = ID
 
-    override fun getDisplayName(): String = "Dependency Source Language Level"
+    override fun getDisplayName(): String = JvmDowngraderBundle.message("popup.title")
 
     override fun isAvailable(project: Project): Boolean = true
 
@@ -58,9 +62,9 @@ private class LibrarySourceLanguageLevelWidget(
     } ?: "JvmDg"
 
     override fun getTooltipText(): String = if (currentDependencySource() == null) {
-        "Current file is not a dependency source"
+        JvmDowngraderBundle.message("status.not-dependency")
     } else {
-        "Choose Java language level for this dependency source"
+        JvmDowngraderBundle.message("status.choose-level")
     }
 
     override fun getAlignment(): Float = 0.5f
@@ -86,15 +90,21 @@ private class LibrarySourceLanguageLevelWidget(
 
     private fun showChoices(file: com.intellij.openapi.vfs.VirtualFile, event: MouseEvent) {
         val choices = LanguageLevelMode.entries.filter { it != LanguageLevelMode.INHERIT_GLOBAL }
-        JBPopupFactory.getInstance()
+        val popup = JBPopupFactory.getInstance()
             .createPopupChooserBuilder(choices)
-            .setTitle("Dependency Source Language Level")
+            .setRenderer(SimpleListCellRenderer.create("") { it?.presentableName })
+            .setTitle(JvmDowngraderBundle.message("popup.title"))
             .setItemChosenCallback { mode ->
                 project.service<LibrarySourceRefreshCoordinator>().setFileOverride(file, mode)
                 update()
             }
             .createPopup()
-            .showInScreenCoordinates(event.component, event.locationOnScreen)
+        popup.pack(true, true)
+        val buttonLocation = event.component.locationOnScreen
+        val popupSize = popup.content.preferredSize ?: Dimension(240, 180)
+        val x = buttonLocation.x + (event.component.width - popupSize.width) / 2
+        val y = buttonLocation.y - popupSize.height
+        popup.showInScreenCoordinates(event.component, Point(x, y))
     }
 
     private fun update() {

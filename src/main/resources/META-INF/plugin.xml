@@ -1,6 +1,7 @@
 <idea-plugin>
     <id>com.hfstudio.jvmdowngraderidea</id>
     <name>JVM Downgrader</name>
+    <resource-bundle>messages.JvmDowngraderBundle</resource-bundle>
     <vendor url="https://github.com/HFStudio">HFStudio</vendor>
     <description><![CDATA[
         Parses JVM Downgrader and Jabel dependency source attachments at their required Java language level.<br>
@@ -18,7 +19,7 @@
         <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator"/>
         <projectConfigurable
                 id="com.hfstudio.jvmdowngraderidea.projectSettings"
-                displayName="JVM Downgrader"
+                displayName="%settings.title"
                 parentId="tools"
                 instance="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectConfigurable"/>
         <filePropertyPusher implementation="com.hfstudio.jvmdowngraderidea.library.LibraryJavaLanguageLevelPusher"/>
