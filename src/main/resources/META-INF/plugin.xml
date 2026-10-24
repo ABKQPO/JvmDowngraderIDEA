@@ -28,5 +28,8 @@
                 instance="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectConfigurable"/>
         <filePropertyPusher implementation="com.hfstudio.jvmdowngraderidea.library.LibraryJavaLanguageLevelPusher"/>
         <backgroundPostStartupActivity implementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceStartupActivity"/>
+        <statusBarWidgetFactory
+                id="JvmDowngraderLibrarySourceLanguageLevel"
+                implementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceLanguageLevelWidgetFactory"/>
     </extensions>
 </idea-plugin>

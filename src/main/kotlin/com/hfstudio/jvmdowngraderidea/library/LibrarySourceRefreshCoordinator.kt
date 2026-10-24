@@ -7,18 +7,44 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.roots.ProjectFileIndex
-import com.intellij.openapi.roots.impl.PushedFilePropertiesUpdater
+import com.intellij.openapi.wm.WindowManager
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.psi.PsiManager
+import com.intellij.util.FileContentUtilCore
 import com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderApplicationSettings
 import com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectSettings
+import com.hfstudio.jvmdowngraderidea.settings.LanguageLevelMode
 import java.util.concurrent.ConcurrentHashMap
 
 @Service(Service.Level.PROJECT)
 class LibrarySourceRefreshCoordinator(private val project: Project) {
     private val pusher = LibraryJavaLanguageLevelPusher()
     private val pendingResolutionUrls = ConcurrentHashMap.newKeySet<String>()
+    private val fileOverrides = ConcurrentHashMap<String, LanguageLevelMode>()
+
+    fun setFileOverride(file: VirtualFile, mode: LanguageLevelMode?) {
+        if (mode == null || mode == LanguageLevelMode.AUTO) {
+            fileOverrides.remove(file.url)
+            LibrarySourceLanguageLevelOverrides.set(project, file, null)
+        } else {
+            fileOverrides[file.url] = mode
+            LibrarySourceLanguageLevelOverrides.set(project, file, mode.javaVersion)
+        }
+        scheduleUpdate(file)
+    }
+
+    fun fileOverride(file: VirtualFile): LanguageLevelMode =
+        fileOverrides[file.url] ?: LanguageLevelMode.AUTO
+
+    fun statusText(file: VirtualFile): String {
+        val override = fileOverrides[file.url]
+        if (override != null && override != LanguageLevelMode.AUTO) return override.presentableName
+
+        val detected = pusher.lookup(file).level ?: 8
+        return "Auto ($detected)"
+    }
 
     fun start() {
         project.messageBus.connect(project).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
@@ -42,7 +68,11 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
     private fun scheduleUpdate(file: com.intellij.openapi.vfs.VirtualFile) {
         ApplicationManager.getApplication().invokeLater(
             {
-                if (!project.isDisposed) updateOrRequest(file)
+                if (!project.isDisposed) {
+                    updateOrRequest(file)
+                    WindowManager.getInstance().getStatusBar(project)
+                        ?.updateWidget(LibrarySourceLanguageLevelWidgetFactory.ID)
+                }
             },
             ModalityState.nonModal(),
         )
@@ -54,6 +84,12 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
                 ProjectFileIndex.getInstance(project).isInLibrarySource(file),
             )
         ) {
+            return
+        }
+
+        val fileOverride = fileOverrides[file.url]
+        fileOverride?.javaVersion?.let {
+            updateLanguageLevel(file, com.intellij.pom.java.LanguageLevel.forFeature(it))
             return
         }
 
@@ -86,8 +122,15 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         if (level == null) {
             pusher.filePropertyKey.setPersistentValue(file, null)
         } else {
-            PushedFilePropertiesUpdater.getInstance(project).findAndUpdateValue(file, pusher, level)
+            // Java PSI reads this exact persistent key when calculating the
+            // language level. Write it directly so the built-in Java pusher
+            // cannot immediately replace a manual dependency-source choice.
+            pusher.filePropertyKey.setPersistentValue(file, level)
         }
+        // Changing the persistent property does not invalidate an already
+        // created Java PSI file. Force a VFS reparse so the new level is used
+        // immediately, without requiring a sandbox restart.
+        FileContentUtilCore.reparseFiles(file)
         PsiManager.getInstance(project).findFile(file)?.let {
             DaemonCodeAnalyzer.getInstance(project).restart(it)
         }
