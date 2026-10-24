@@ -85,12 +85,7 @@ private class LibrarySourceLanguageLevelWidget(
     }
 
     private fun showChoices(file: com.intellij.openapi.vfs.VirtualFile, event: MouseEvent) {
-        val choices = listOf(
-            LanguageLevelMode.AUTO,
-            LanguageLevelMode.JAVA_8,
-            LanguageLevelMode.JAVA_17,
-            LanguageLevelMode.JAVA_25,
-        )
+        val choices = LanguageLevelMode.entries.filter { it != LanguageLevelMode.INHERIT_GLOBAL }
         JBPopupFactory.getInstance()
             .createPopupChooserBuilder(choices)
             .setTitle("Dependency Source Language Level")

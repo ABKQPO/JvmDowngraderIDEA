@@ -25,7 +25,7 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
     private val fileOverrides = ConcurrentHashMap<String, LanguageLevelMode>()
 
     fun setFileOverride(file: VirtualFile, mode: LanguageLevelMode?) {
-        if (mode == null || mode == LanguageLevelMode.AUTO) {
+        if (mode == null) {
             fileOverrides.remove(file.url)
             LibrarySourceLanguageLevelOverrides.set(project, file, null)
         } else {
@@ -36,8 +36,8 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
     }
 
     fun statusText(file: VirtualFile): String {
-        val override = fileOverrides[file.url]
-        if (override != null && override != LanguageLevelMode.AUTO) return override.presentableName
+        val override = effectiveMode(file)
+        if (override != LanguageLevelMode.AUTO) return override.presentableName
 
         val detected = pusher.lookup(file).level ?: 8
         return "Auto ($detected)"
@@ -84,18 +84,9 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
             return
         }
 
-        val fileOverride = fileOverrides[file.url]
+        val fileOverride = effectiveMode(file)
         fileOverride?.javaVersion?.let {
             updateLanguageLevel(file, com.intellij.pom.java.LanguageLevel.forFeature(it))
-            return
-        }
-
-        val fixedLevel = LibrarySourceLanguageLevelSettingsResolver.fixedLevel(
-            project.service<JvmDowngraderProjectSettings>().mode,
-            service<JvmDowngraderApplicationSettings>().mode,
-        )
-        if (fixedLevel != null) {
-            updateLanguageLevel(file, com.intellij.pom.java.LanguageLevel.forFeature(fixedLevel))
             return
         }
 
@@ -111,6 +102,25 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         }
 
         updateLanguageLevel(file, lookup.level?.let(com.intellij.pom.java.LanguageLevel::forFeature))
+    }
+
+    private fun effectiveMode(file: VirtualFile): LanguageLevelMode {
+        fileOverrides[file.url]?.let { return it }
+        val fixedLevel = LibrarySourceLanguageLevelSettingsResolver.fixedLevel(
+            project.service<JvmDowngraderProjectSettings>().mode,
+            service<JvmDowngraderApplicationSettings>().mode,
+        )
+        val mode = when (fixedLevel) {
+            8 -> LanguageLevelMode.JAVA_8
+            11 -> LanguageLevelMode.JAVA_11
+            17 -> LanguageLevelMode.JAVA_17
+            21 -> LanguageLevelMode.JAVA_21
+            25 -> LanguageLevelMode.JAVA_25
+            else -> LanguageLevelMode.AUTO
+        }
+        fileOverrides[file.url] = mode
+        LibrarySourceLanguageLevelOverrides.set(project, file, mode.javaVersion)
+        return mode
     }
 
     private fun updateLanguageLevel(file: VirtualFile, level: com.intellij.pom.java.LanguageLevel?) {
