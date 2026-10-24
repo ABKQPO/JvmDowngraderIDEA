@@ -85,7 +85,7 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
         }
 
         val fileOverride = effectiveMode(file)
-        fileOverride?.javaVersion?.let {
+        fileOverride.javaVersion?.let {
             updateLanguageLevel(file, com.intellij.pom.java.LanguageLevel.forFeature(it))
             return
         }

@@ -16,11 +16,6 @@
         <applicationService serviceImplementation="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderApplicationSettings"/>
         <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectSettings"/>
         <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator"/>
-        <applicationConfigurable
-                id="com.hfstudio.jvmdowngraderidea.settings"
-                displayName="JVM Downgrader"
-                parentId="tools"
-                instance="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderConfigurable"/>
         <projectConfigurable
                 id="com.hfstudio.jvmdowngraderidea.projectSettings"
                 displayName="JVM Downgrader"

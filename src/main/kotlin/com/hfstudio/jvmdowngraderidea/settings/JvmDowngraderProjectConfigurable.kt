@@ -10,26 +10,34 @@ import com.intellij.util.ui.FormBuilder
 import javax.swing.JComponent
 
 class JvmDowngraderProjectConfigurable(private val project: Project) : Configurable {
-    private val settings = project.service<JvmDowngraderProjectSettings>()
-    private val modeBox = ComboBox(LanguageLevelMode.entries.toTypedArray())
+    private val projectSettings = project.service<JvmDowngraderProjectSettings>()
+    private val globalSettings = service<JvmDowngraderApplicationSettings>()
+    private val globalModeBox = ComboBox(LanguageLevelMode.entries.filter { it != LanguageLevelMode.INHERIT_GLOBAL }.toTypedArray())
+    private val projectModeBox = ComboBox(LanguageLevelMode.entries.toTypedArray())
 
     override fun getDisplayName(): String = "JVM Downgrader"
 
     override fun createComponent(): JComponent {
-        modeBox.renderer = SimpleListCellRenderer.create("") { it?.presentableName }
+        val renderer = SimpleListCellRenderer.create<LanguageLevelMode>("") { it?.presentableName }
+        globalModeBox.renderer = renderer
+        projectModeBox.renderer = renderer
         return FormBuilder.createFormBuilder()
-            .addLabeledComponent("Project library source language level", modeBox)
+            .addLabeledComponent("Global default library source language level", globalModeBox)
+            .addLabeledComponent("Project default library source language level", projectModeBox)
             .panel
     }
 
-    override fun isModified(): Boolean = modeBox.item != settings.mode
+    override fun isModified(): Boolean =
+        globalModeBox.item != globalSettings.mode || projectModeBox.item != projectSettings.mode
 
     override fun apply() {
-        settings.mode = modeBox.item ?: LanguageLevelMode.INHERIT_GLOBAL
+        globalSettings.mode = globalModeBox.item ?: LanguageLevelMode.AUTO
+        projectSettings.mode = projectModeBox.item ?: LanguageLevelMode.INHERIT_GLOBAL
         project.service<LibrarySourceRefreshCoordinator>().refresh()
     }
 
     override fun reset() {
-        modeBox.item = settings.mode
+        globalModeBox.item = globalSettings.mode
+        projectModeBox.item = projectSettings.mode
     }
 }
