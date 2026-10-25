@@ -5,6 +5,8 @@ import com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.psi.PsiManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
@@ -52,7 +54,14 @@ class JvmDowngraderProjectConfigurable(private val project: Project) : Configura
     override fun apply() {
         globalSettings.mode = globalModeBox.item ?: LanguageLevelMode.AUTO
         projectSettings.mode = projectModeBox.item ?: LanguageLevelMode.INHERIT_GLOBAL
-        globalSettings.navigateVersionedClassesToSource = navigateToSourceBox.isSelected
+        if (globalSettings.navigateVersionedClassesToSource != navigateToSourceBox.isSelected) {
+            globalSettings.navigateVersionedClassesToSource = navigateToSourceBox.isSelected
+            // IntelliJ caches class/member source mirrors until the next PSI change,
+            // so drop them for the global switch to apply to the next navigation.
+            ProjectManager.getInstance().openProjects
+                .filterNot { it.isDisposed }
+                .forEach { PsiManager.getInstance(it).dropPsiCaches() }
+        }
         globalSettings.selectBaseClassForLibrarySource = selectBaseClassBox.isSelected
         project.service<LibrarySourceRefreshCoordinator>().refresh()
     }
