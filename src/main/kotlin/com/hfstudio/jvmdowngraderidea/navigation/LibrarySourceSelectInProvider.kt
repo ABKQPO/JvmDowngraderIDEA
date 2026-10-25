@@ -1,6 +1,8 @@
 package com.hfstudio.jvmdowngraderidea.navigation
 
+import com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderApplicationSettings
 import com.intellij.ide.projectView.SelectableTreeStructureProvider
+import com.intellij.openapi.components.service
 import com.intellij.ide.projectView.ViewSettings
 import com.intellij.ide.projectView.impl.ClassesTreeStructureProvider
 import com.intellij.ide.util.treeView.AbstractTreeNode
@@ -34,6 +36,7 @@ class LibrarySourceSelectInProvider(private val project: Project) : SelectableTr
     ): Collection<AbstractTreeNode<*>> = children
 
     override fun getTopLevelElement(element: PsiElement): PsiElement? {
+        if (!service<JvmDowngraderApplicationSettings>().selectBaseClassForLibrarySource) return null
         if (DumbService.isDumb(project) || element is PsiCompiledElement) return null
         val sourceFile = element.containingFile?.virtualFile ?: return null
         if (!ProjectFileIndex.getInstance(project).isInLibrarySource(sourceFile)) return null

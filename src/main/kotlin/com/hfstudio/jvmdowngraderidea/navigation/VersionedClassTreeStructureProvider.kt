@@ -40,7 +40,9 @@ class VersionedClassTreeStructureProvider : TreeStructureProvider, DumbAware {
             val project = project
             val file = virtualFile
             // Without a redirect the default navigation already stays on the class file.
-            if (project != null && file != null && JvmDowngraderMultiRelease.findBaseClassFile(file) != null) {
+            if (project != null && file != null && JvmDowngraderClsNavigationPolicy.isEnabled() &&
+                JvmDowngraderMultiRelease.findBaseClassFile(file) != null
+            ) {
                 OpenFileDescriptor(project, file).navigate(requestFocus)
             } else {
                 super.navigate(requestFocus, preserveState)
