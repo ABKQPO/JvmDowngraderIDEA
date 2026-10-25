@@ -2,6 +2,11 @@ package com.hfstudio.jvmdowngraderidea.library
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.roots.ModuleRootEvent
+import com.intellij.openapi.roots.ModuleRootListener
+import com.intellij.openapi.roots.OrderEnumerator
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -49,7 +54,27 @@ class LibrarySourceRefreshCoordinator(private val project: Project) {
                 scheduleUpdate(file)
             }
         })
+        project.messageBus.connect(project).subscribe(ModuleRootListener.TOPIC, object : ModuleRootListener {
+            override fun rootsChanged(event: ModuleRootEvent) {
+                prefetchMultiReleaseJars()
+            }
+        })
+        prefetchMultiReleaseJars()
         refresh()
+    }
+
+    /**
+     * Scans multi-release library jars ahead of time. Class navigation must not
+     * block on a jar scan, so it only redirects once the scan result is cached.
+     */
+    private fun prefetchMultiReleaseJars() {
+        ReadAction.nonBlocking<List<VirtualFile>> {
+            OrderEnumerator.orderEntries(project).librariesOnly().classes().roots
+                .filter { it.findFileByRelativePath("META-INF/versions") != null }
+        }
+            .expireWith(project)
+            .submit(AppExecutorUtil.getAppExecutorService())
+            .onSuccess { roots -> roots.forEach(LibrarySourceLanguageLevelResolver::prefetchJarInfo) }
     }
 
     fun refresh() {

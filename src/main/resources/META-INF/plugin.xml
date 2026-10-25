@@ -27,5 +27,16 @@
         <statusBarWidgetFactory
                 id="JvmDowngraderLibrarySourceLanguageLevel"
                 implementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceLanguageLevelWidgetFactory"/>
+        <psi.clsCustomNavigationPolicy implementation="com.hfstudio.jvmdowngraderidea.navigation.JvmDowngraderClsNavigationPolicy"/>
+        <!-- Wraps the class nodes created by ClassesTreeStructureProvider, so it must run after it. -->
+        <treeStructureProvider
+                id="JvmDowngraderVersionedClassTreeStructureProvider"
+                implementation="com.hfstudio.jvmdowngraderidea.navigation.VersionedClassTreeStructureProvider"
+                order="last, after ClassesTreeStructureProvider"/>
+        <!-- Select-in uses the first provider returning an element, so it must run before the classes provider. -->
+        <treeStructureProvider
+                id="JvmDowngraderLibrarySourceSelectInProvider"
+                implementation="com.hfstudio.jvmdowngraderidea.navigation.LibrarySourceSelectInProvider"
+                order="before ClassesTreeStructureProvider"/>
     </extensions>
 </idea-plugin>
