@@ -1,5 +1,7 @@
 package com.hfstudio.jvmdowngraderidea.settings
 
+import com.hfstudio.jvmdowngraderidea.JvmDowngraderBundle
+
 enum class LanguageLevelMode(val javaVersion: Int? = null) {
     INHERIT_GLOBAL,
     AUTO,
@@ -11,8 +13,8 @@ enum class LanguageLevelMode(val javaVersion: Int? = null) {
 
     val presentableName: String
         get() = when (this) {
-            INHERIT_GLOBAL -> "Inherit global setting"
-            AUTO -> "Automatic"
-            else -> "Java $javaVersion"
+            INHERIT_GLOBAL -> JvmDowngraderBundle.message("language-level.inherit-global")
+            AUTO -> JvmDowngraderBundle.message("language-level.auto")
+            else -> JvmDowngraderBundle.message("language-level.java", javaVersion ?: "")
         }
 }

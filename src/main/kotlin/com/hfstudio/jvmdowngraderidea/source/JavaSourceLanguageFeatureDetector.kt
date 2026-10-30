@@ -1,18 +1,18 @@
 package com.hfstudio.jvmdowngraderidea.source
 
 object JavaSourceLanguageFeatureDetector {
-    private val localVar = Regex("\\bvar\\s+[A-Za-z_$][\\w$]*\\s*(?==|:|;|,|\\))")
-    private val varLambdaParameter = Regex("\\(\\s*var\\s+[A-Za-z_$][\\w$]*")
-    private val recordDeclaration = Regex("\\brecord\\s+[A-Za-z_$][\\w$]*\\s*\\(")
-    private val sealedDeclaration = Regex("\\b(?:sealed|non-sealed)\\s+(?:class|interface)\\b")
+    private val localVar = Regex("""\bvar\s+[A-Za-z_$][\w$]*\s*(?=[=:;,)])""")
+    private val varLambdaParameter = Regex("""\(\s*var\s+[A-Za-z_$][\w$]*""")
+    private val recordDeclaration = Regex("""\brecord\s+[A-Za-z_$][\w$]*\s*\(""")
+    private val sealedDeclaration = Regex("""\b(?:sealed|non-sealed)\s+(?:class|interface)\b""")
     private val instanceOfPattern = Regex(
-        "\\binstanceof\\s+[A-Za-z_$][\\w$]*(?:\\s*<[^>{};()]*>)?(?:\\s*\\[\\])?\\s+[A-Za-z_$][\\w$]*\\b",
+        """\binstanceof\s+[A-Za-z_$][\w$]*(?:\s*<[^>{};()]*>)?(?:\s*\[])?\s+[A-Za-z_$][\w$]*\b""",
     )
-    private val switchRule = Regex("\\b(?:case|default)\\b[^{};]*->")
+    private val switchRule = Regex("""\b(?:case|default)\b[^{};]*->""")
     private val patternSwitchRule = Regex(
-        "\\bcase\\s+[A-Za-z_$][\\w$]*(?:\\s*<[^>{};()]*>)?(?:\\s*\\[\\])?\\s+[A-Za-z_$][\\w$]*\\s*(?:when\\s+[^{};]+)?->",
+        """\bcase\s+[A-Za-z_$][\w$]*(?:\s*<[^>{};()]*>)?(?:\s*\[])?\s+[A-Za-z_$][\w$]*\s*(?:when\s+[^{};]+)?->""",
     )
-    private val stringTemplate = Regex("\\b(?:STR|RAW)\\.\\\"")
+    private val stringTemplate = Regex("""\b(?:STR|RAW)\.""")
 
     /**
      * Returns the minimum final Java release needed to parse syntax found in [source].
@@ -59,10 +59,10 @@ object JavaSourceLanguageFeatureDetector {
                     }
                 }
 
-                source.startsWith("\\\"\\\"\\\"", index) -> {
+                source.startsWith("\"\"\"", index) -> {
                     hasTextBlock = true
                     repeat(3) { appendIgnored(source[index++]) }
-                    while (index < source.length && !source.startsWith("\\\"\\\"\\\"", index)) {
+                    while (index < source.length && !source.startsWith("\"\"\"", index)) {
                         appendIgnored(source[index++])
                     }
                     if (index < source.length) repeat(3) { appendIgnored(source[index++]) }

@@ -51,6 +51,17 @@ object LibrarySourceLanguageLevelResolver {
         sourceSyntaxLevel: Int?,
     ): Int? = fixedLevel ?: jvmDowngraderLevel ?: sourceSyntaxLevel
 
+    /**
+     * Returns the scan result for the jar containing [classRoot] without blocking.
+     * A missing result schedules a scan, so later calls can answer.
+     */
+    fun cachedJarInfo(classRoot: VirtualFile): JvmDowngraderJarInfo? =
+        jarPath(classRoot)?.let { requestJarInfo(it).getNow(null) }
+
+    fun prefetchJarInfo(classRoot: VirtualFile) {
+        jarPath(classRoot)?.let(::requestJarInfo)
+    }
+
     private fun requestJarInfo(path: Path): CompletableFuture<JvmDowngraderJarInfo> =
         jarInfoCache.computeIfAbsent(path) {
             CompletableFuture<JvmDowngraderJarInfo>().also { result ->

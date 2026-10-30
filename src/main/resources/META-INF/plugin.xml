@@ -1,6 +1,7 @@
 <idea-plugin>
     <id>com.hfstudio.jvmdowngraderidea</id>
     <name>JVM Downgrader</name>
+    <resource-bundle>messages.JvmDowngraderBundle</resource-bundle>
     <vendor url="https://github.com/HFStudio">HFStudio</vendor>
     <description><![CDATA[
         Parses JVM Downgrader and Jabel dependency source attachments at their required Java language level.<br>
@@ -16,17 +17,26 @@
         <applicationService serviceImplementation="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderApplicationSettings"/>
         <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectSettings"/>
         <projectService serviceImplementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceRefreshCoordinator"/>
-        <applicationConfigurable
-                id="com.hfstudio.jvmdowngraderidea.settings"
-                displayName="JVM Downgrader"
-                parentId="tools"
-                instance="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderConfigurable"/>
         <projectConfigurable
                 id="com.hfstudio.jvmdowngraderidea.projectSettings"
-                displayName="JVM Downgrader"
+                key="settings.title"
                 parentId="tools"
                 instance="com.hfstudio.jvmdowngraderidea.settings.JvmDowngraderProjectConfigurable"/>
         <filePropertyPusher implementation="com.hfstudio.jvmdowngraderidea.library.LibraryJavaLanguageLevelPusher"/>
         <backgroundPostStartupActivity implementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceStartupActivity"/>
+        <statusBarWidgetFactory
+                id="JvmDowngraderLibrarySourceLanguageLevel"
+                implementation="com.hfstudio.jvmdowngraderidea.library.LibrarySourceLanguageLevelWidgetFactory"/>
+        <psi.clsCustomNavigationPolicy implementation="com.hfstudio.jvmdowngraderidea.navigation.JvmDowngraderClsNavigationPolicy"/>
+        <!-- Wraps the class nodes created by ClassesTreeStructureProvider, so it must run after it. -->
+        <treeStructureProvider
+                id="JvmDowngraderVersionedClassTreeStructureProvider"
+                implementation="com.hfstudio.jvmdowngraderidea.navigation.VersionedClassTreeStructureProvider"
+                order="last, after ClassesTreeStructureProvider"/>
+        <!-- Select-in uses the first provider returning an element, so it must run before the classes provider. -->
+        <treeStructureProvider
+                id="JvmDowngraderLibrarySourceSelectInProvider"
+                implementation="com.hfstudio.jvmdowngraderidea.navigation.LibrarySourceSelectInProvider"
+                order="before ClassesTreeStructureProvider"/>
     </extensions>
 </idea-plugin>

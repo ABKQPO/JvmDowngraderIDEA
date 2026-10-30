@@ -10,7 +10,23 @@ import com.intellij.openapi.components.Storage
 class JvmDowngraderApplicationSettings : PersistentStateComponent<JvmDowngraderApplicationSettings.StoredState> {
     class StoredState {
         var languageLevelMode: String = LanguageLevelMode.AUTO.name
+        var navigateVersionedClassesToSource: Boolean = true
+        var selectBaseClassForLibrarySource: Boolean = true
     }
+
+    /** Jump from META-INF/versions classes of JVM Downgrader jars to the base class source. */
+    var navigateVersionedClassesToSource: Boolean
+        get() = storedState.navigateVersionedClassesToSource
+        set(value) {
+            storedState.navigateVersionedClassesToSource = value
+        }
+
+    /** Select the base class instead of the META-INF/versions class for an open library source. */
+    var selectBaseClassForLibrarySource: Boolean
+        get() = storedState.selectBaseClassForLibrarySource
+        set(value) {
+            storedState.selectBaseClassForLibrarySource = value
+        }
 
     private var storedState = StoredState()
 

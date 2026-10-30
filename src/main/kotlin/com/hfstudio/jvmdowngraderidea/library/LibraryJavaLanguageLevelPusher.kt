@@ -21,10 +21,13 @@ class LibraryJavaLanguageLevelPusher : FilePropertyPusherBase<LanguageLevel>() {
 
     override fun getImmediateValue(module: Module): LanguageLevel = LanguageLevel.HIGHEST
 
-    override fun getImmediateValue(project: Project, file: VirtualFile?): LanguageLevel? =
-        file?.let { lookup(it).level?.let(LanguageLevel::forFeature) }
+    override fun getImmediateValue(project: Project, file: VirtualFile?): LanguageLevel? = file?.let {
+        LibrarySourceLanguageLevelOverrides.get(project, it)
+            ?: lookup(it).level
+    }?.let(LanguageLevel::forFeature)
 
-    override fun acceptsFile(file: VirtualFile, project: Project): Boolean = lookup(file).level != null
+    override fun acceptsFile(file: VirtualFile, project: Project): Boolean =
+        LibrarySourceLanguageLevelOverrides.get(project, file) != null || lookup(file).level != null
 
     override fun acceptsDirectory(file: VirtualFile, project: Project): Boolean = false
 
